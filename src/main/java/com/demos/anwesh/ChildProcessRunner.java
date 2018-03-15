@@ -16,14 +16,16 @@ public class ChildProcessRunner {
                     process = runtime.exec(command, null, directories[0]);
                 }
                 process.waitFor();
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line = bufferedReader.readLine();
-                List<String> lines = new ArrayList();
-                while (line != null) {
-                    lines.add(line);
-                    line = bufferedReader.readLine();
+                try(BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line = bufferedReader.readLine();
+                    List<String> lines = new ArrayList();
+                    while (line != null) {
+                        lines.add(line);
+                        line = bufferedReader.readLine();
+                    }
+                    return lines;
                 }
-                return lines;
+
             }
         });
         List<String> results = null;

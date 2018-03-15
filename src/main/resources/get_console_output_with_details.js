@@ -6,8 +6,7 @@ page.onInitialized = function() {
     scriptLoaded = page.injectJs('index.js')
 }
 page.onResourceError = function(error) {
-    console.log("resource error")
-    console.log(JSON.stringify(error))
+    console.log("RESOURCE_ERROR:"+JSON.stringify(error))
 }
 if(system.args.length == 2) {
     var url = system.args[1]

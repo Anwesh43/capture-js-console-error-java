@@ -13,6 +13,8 @@ public class CaptureConsoleUtils {
     private final static String JAVASCRIPT_ERROR_INDICATOR = "CONSOLE_ERRORS:";
     private final static String HOME_DIRECTORY_KEY = "user.home";
     private final static String PHANTOM_JS_INSTALLATION_PATH_WINDOWS = "AppData/Roaming/npm/phantomjs.cmd";
+    private final static String RESOURCE_ERROR_INDICATOR = "RESOURCE_ERROR:";
+    private final static Gson gson = new Gson();
     public static List<String> getListOfFiles() {
         return ChildProcessRunner.getProcessOutput(LIST_OF_FILES_COMMAND);
     }
@@ -23,9 +25,11 @@ public class CaptureConsoleUtils {
         }
         return null;
     }
+    public static List<String> getPhantomScriptJSON(String phantomjsPath, String url, String directory) {
+        return ChildProcessRunner.getProcessOutput(PHANTOM_COMMAND.replace("phantomjs", phantomjsPath) + " "+ url, new File(directory));
+    }
     public static String getJavascriptErrrosJSON(String phantomjsPath, String url, String directory) {
-        List<String> results =  ChildProcessRunner.getProcessOutput(PHANTOM_COMMAND.replace("phantomjs", phantomjsPath) + " "+ url, new File(directory));
-        for(String result : results) {
+        for(String result : getPhantomScriptJSON(phantomjsPath, url, directory)) {
             if (result.startsWith(JAVASCRIPT_ERROR_INDICATOR)) {
                 return result.replace(JAVASCRIPT_ERROR_INDICATOR, "");
             }
@@ -39,8 +43,26 @@ public class CaptureConsoleUtils {
     }
     public static List<JavaScriptConsoleError> getJavascritErrosList(String phantomjsPath, String url, String directory) {
         String javascriptErrorsJson = getJavascriptErrrosJSON(phantomjsPath, url, directory);
-        Gson gson = new Gson();
         Type javascriptErrorsType = new TypeToken<List<JavaScriptConsoleError>>(){}.getType();
         return gson.fromJson(javascriptErrorsJson, javascriptErrorsType);
+    }
+    public static String getJsNetworkErrorJSON(String phantomjsPath, String url, String directory) {
+        StringBuilder networkJsonBuilder = new StringBuilder("[");
+        int i = 0;
+        for(String result : getPhantomScriptJSON(phantomjsPath, url, directory)) {
+            if (i == 0) {
+                networkJsonBuilder.append(",");
+            }
+            if (result.startsWith(RESOURCE_ERROR_INDICATOR)) {
+                networkJsonBuilder.append(result.replace(RESOURCE_ERROR_INDICATOR, ""));
+            }
+            i++;
+        }
+        networkJsonBuilder.append("]");
+        return networkJsonBuilder.toString();
+    }
+    public static List<JavascriptNetworkError> getJavascriptNetworkErrors(String phantomjsPath, String url, String directory) {
+        Type networkErrorType = new TypeToken<List<JavascriptNetworkError>>() {}.getType();
+        return gson.fromJson(getJsNetworkErrorJSON(phantomjsPath, url, directory), networkErrorType);
     }
 }
